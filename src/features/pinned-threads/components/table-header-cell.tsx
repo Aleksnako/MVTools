@@ -1,10 +1,9 @@
-import type { CheckedState } from '@radix-ui/react-checkbox'
-import { useCallback } from 'react'
+import { flexRender, type Table } from '@tanstack/react-table'
+import { Fragment } from 'react'
 
-import { Checkbox } from '@/components/ui/checkbox'
-import { defaultValues, withForm } from '@/features/pinned-threads/hooks/use-form'
 import { usePinnedThreads } from '@/features/pinned-threads/hooks/use-pinned-threads'
 import { Portal } from '@/features/shared/components/portal'
+import type { PinnedThreadTableRow } from '@/types/media-vida'
 
 const styles = {
   backgroundColor: '#272d30',
@@ -15,29 +14,30 @@ const styles = {
   verticalAlign: 'middle'
 }
 
-export const TableHeaderCell = withForm({
-  defaultValues,
-  render: ({ form }) => {
-    const { tableHeaderRow, tableRows, allChecked } = usePinnedThreads()
+interface Props {
+  table: Table<PinnedThreadTableRow>
+}
 
-    const handleCheckedChange = useCallback((checked: CheckedState) => {
-      form.setFieldValue('items', checked === true ? tableRows.map(({ id }) => id) : [])
-      allChecked.setState(checked)
-    }, [])
+export const TableHeaderCell = ({ table }: Props) => {
+  const { tableHeaderRow } = usePinnedThreads()
 
-    return (
-      <Portal
-        root={tableHeaderRow}
-        styles={styles}
-      >
-        <div className='flex items-center justify-center'>
-          <Checkbox
-            disabled={!tableRows.length}
-            checked={allChecked.state}
-            onCheckedChange={handleCheckedChange}
-          />
-        </div>
-      </Portal>
-    )
-  }
-})
+  return (
+    <Portal
+      root={tableHeaderRow}
+      styles={styles}
+    >
+      {table.getHeaderGroups().map(headerGroup => (
+        <Fragment key={headerGroup.id}>
+          {headerGroup.headers.map(header => (
+            <div
+              key={header.id}
+              className={header.column.columnDef.meta?.headerClassName}
+            >
+              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+            </div>
+          ))}
+        </Fragment>
+      ))}
+    </Portal>
+  )
+}

@@ -40,15 +40,17 @@ export interface ReportElements {
   title: HTMLElement
 }
 
-export interface FavoritesElements {
+export interface PinnedThreadTableRow {
+  id: string
+  row: HTMLTableRowElement
+}
+
+export interface PinnedThreadElements {
   token: string
   buttonsContainer: HTMLElement
   tableHeaderRow: HTMLTableRowElement
   tableFooterRowCell: HTMLTableColElement
-  tableRows: Array<{
-    id: string
-    row: HTMLTableRowElement
-  }>
+  tableRows: PinnedThreadTableRow[]
 }
 
 export interface MarkerPost {

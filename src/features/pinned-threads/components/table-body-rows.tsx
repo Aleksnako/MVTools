@@ -1,9 +1,7 @@
-import { useCallback } from 'react'
+import { flexRender, type Table } from '@tanstack/react-table'
 
-import { Checkbox } from '@/components/ui/checkbox'
-import { defaultValues, withForm } from '@/features/pinned-threads/hooks/use-form'
-import { usePinnedThreads } from '@/features/pinned-threads/hooks/use-pinned-threads'
 import { Portal } from '@/features/shared/components/portal'
+import type { PinnedThreadTableRow } from '@/types/media-vida'
 
 const styles = {
   backgroundColor: '#39464c',
@@ -13,51 +11,26 @@ const styles = {
   verticalAlign: 'middle'
 }
 
-export const TableBodyRows = withForm({
-  defaultValues,
-  render: ({ form }) => {
-    const { allChecked, tableRows } = usePinnedThreads()
+interface Props {
+  table: Table<PinnedThreadTableRow>
+}
 
-    const onChangeListener = useCallback(
-      ({ value }: { value: string[] }) => {
-        if (value.length === 0) {
-          allChecked.setState(false)
-          return
-        }
-        if (value.length === tableRows.length) {
-          allChecked.setState(true)
-          return
-        }
-        allChecked.setState('indeterminate')
-      },
-      [allChecked, tableRows]
-    )
-
-    return (
-      <form.Field
-        name='items'
-        listeners={{ onChange: onChangeListener }}
-        children={field =>
-          tableRows.map(({ id, row }) => (
-            <Portal
-              key={id}
-              root={row}
-              styles={styles}
-            >
-              <div className='flex items-center justify-center'>
-                <Checkbox
-                  checked={field.state.value.includes(id)}
-                  onCheckedChange={checked => {
-                    checked === true
-                      ? field.setValue([...field.state.value, id])
-                      : field.setValue(field.state.value.filter(item => item !== id))
-                  }}
-                />
-              </div>
-            </Portal>
-          ))
-        }
-      />
-    )
-  }
-})
+export const TableBodyRows = ({ table }: Props) => {
+  return table.getRowModel().rows.map(row => (
+    <Portal
+      key={row.id}
+      root={row.original.row}
+      styles={styles}
+    >
+      {row.getVisibleCells().map(cell => (
+        <div
+          key={cell.id}
+          className={cell.column.columnDef.meta?.cellClassName}
+          title={cell.column.columnDef.meta?.title ? (cell.getValue() as string) : undefined}
+        >
+          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        </div>
+      ))}
+    </Portal>
+  ))
+}
