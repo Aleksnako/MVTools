@@ -13,7 +13,7 @@ import {
   AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { usePreventDataScrollLocked } from '@/features/pinned-threads/hooks/use-prevent-data-scroll-locked'
+import { usePreventDataScrollLocked } from '@/features/shared/hooks/use-prevent-data-scroll-locked'
 import { useShadowRoot } from '@/features/shared/hooks/use-shadow-root'
 import { buttonVariants, cn } from '@/utils/tailwind'
 

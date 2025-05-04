@@ -1,10 +1,10 @@
 import { CSS_SELECTORS, HTML_ATTRIBUTES, URLS } from '@/constants'
 import {
-  type FavoritesElements,
   FROM_SECTIONS,
   type FromSection,
   type MarkerPost,
   type MarkersElements,
+  type PinnedThreadElements,
   type PostElements,
   type PostReplyElements,
   type PrivateMessagesElements,
@@ -78,7 +78,7 @@ export const getReportsElements = (): ReportElements => {
   }
 }
 
-export const getFavoritesElements = (): FavoritesElements => ({
+export const getPinnedThreadElements = (): PinnedThreadElements => ({
   token: document.querySelector<HTMLInputElement>(FAVOURITES.TOKEN)!.value,
   buttonsContainer: document.querySelector<HTMLElement>(FAVOURITES.BUTTONS_CONTAINER)!,
   tableHeaderRow: document.querySelector<HTMLTableRowElement>(FAVOURITES.TABLE_HEADER_ROW)!,
