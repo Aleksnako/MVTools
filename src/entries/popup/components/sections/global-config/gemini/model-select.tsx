@@ -74,9 +74,9 @@ export const ModelSelect = () => {
             <CommandEmpty>No Models found.</CommandEmpty>
             <CommandList className='h-[230px]'>
               <CommandGroup>
-                {models?.all.map(model => (
+                {models?.all.map(({ name, displayName, description }) => (
                   <Tooltip
-                    key={model.name}
+                    key={name}
                     delayDuration={0}
                     disableHoverableContent
                   >
@@ -84,21 +84,21 @@ export const ModelSelect = () => {
                       <div>
                         <CommandItem
                           className='data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground'
-                          value={model.name}
+                          value={name}
                           onSelect={() => {
-                            mutatePartial({ geminiModel: model.name })
+                            mutatePartial({ geminiModel: name })
                             setOpen(false)
                           }}
                         >
-                          <span className='truncate'>{model.displayName}</span>
-                          <Check className={cn('ml-auto', globalConfig.geminiModel === model.name ? 'opacity-100' : 'opacity-0')} />
+                          <span className='truncate'>{displayName}</span>
+                          <Check className={cn('ml-auto', globalConfig.geminiModel === name ? 'opacity-100' : 'opacity-0')} />
                         </CommandItem>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent className='bg-popover text-popover-foreground max-w-[var(--radix-popper-anchor-width)] space-y-2 text-pretty border p-4 shadow-md'>
                       <div className='space-y-2'>
-                        <h4 className='font-medium leading-none'>{model.name}</h4>
-                        {model.description && <div className='text-muted-foreground text-sm'>{model.description}</div>}
+                        <h4 className='font-medium leading-none'>{name}</h4>
+                        {description && <div className='text-muted-foreground text-sm'>{description}</div>}
                       </div>
                     </TooltipContent>
                   </Tooltip>

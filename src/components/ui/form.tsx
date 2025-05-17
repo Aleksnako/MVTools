@@ -1,122 +1,128 @@
-import { Slot } from '@radix-ui/react-slot'
-import type { StandardSchemaV1Issue } from '@tanstack/react-form'
+import { Slot, type SlotProps } from '@radix-ui/react-slot'
+import { useStore } from '@tanstack/react-form'
 import type { LucideIcon } from 'lucide-react'
-import React from 'react'
+import { type ComponentProps, createContext, useId } from 'react'
 
 import { Input, type InputProps } from '@/components/ui/input'
 import { PasswordInput, type PasswordInputProps } from '@/components/ui/password-input'
 import { Switch, type SwitchProps } from '@/components/ui/switch'
-import { useFieldContext } from '@/entries/popup/hooks/use-form'
+import { useFieldContext as _useFieldContext } from '@/entries/popup/hooks/use-form'
+import { createContextProvider, createUseContext } from '@/utils/contexts'
 import { buttonVariants, cn } from '@/utils/tailwind'
 
 import { Label, type LabelProps } from './label'
 
-interface FormItemContextValues {
+interface FormItemContextValue {
   id: string
-  name: string
-  hasError: boolean
-  errors: StandardSchemaV1Issue[]
-  formItemId: string
-  formDescriptionId: string
-  formMessageId: string
-}
-const FormItemContext = React.createContext<FormItemContextValues | undefined>(undefined)
-
-const useFormItem = () => {
-  const context = React.useContext(FormItemContext)
-
-  if (typeof context === 'undefined') throw new Error('useFormItem should be used within <FormItemContext/>')
-
-  return context
 }
 
-type FormItemProps = React.ComponentProps<'div'>
-export const FormItem: React.FC<FormItemProps> = ({ className, ...props }) => {
-  const field = useFieldContext()
-  const id = React.useId()
-  const formItemContextValues = React.useMemo<FormItemContextValues>(
-    () => ({
-      id,
-      name: field.name,
-      hasError: field.state.meta.errors.length > 0,
-      errors: field.state.meta.errors,
-      formItemId: `${id}-${field.name}-item`,
-      formDescriptionId: `${id}-${field.name}-description`,
-      formMessageId: `${id}-${field.name}-message`
-    }),
-    [id, field.name, field.state.meta.errors]
-  )
+const FormItemContext = createContext<FormItemContextValue | null>(null)
+const FormItemContextProvider = createContextProvider(FormItemContext)
+const useFormItemContext = createUseContext(FormItemContext)
+
+const useFieldContext = <T,>() => {
+  const { id } = useFormItemContext()
+  const { name, store, ...fieldContext } = _useFieldContext<T>()
+
+  const errors = useStore(store, state => state.meta.errors)
+  const value = useStore(store, state => state.value)
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Need to check if fieldContext is nullish
+  if (fieldContext == null) {
+    throw new Error('useFieldContext should be used within <FormItem>')
+  }
+
+  return {
+    id,
+    name,
+    formItemId: `${id}-form-item`,
+    formDescriptionId: `${id}-form-item-description`,
+    formMessageId: `${id}-form-item-message`,
+    errors,
+    store,
+    value,
+    ...fieldContext
+  }
+}
+
+export const FormItem = ({ className, ...props }: ComponentProps<'div'>) => {
+  const id = useId()
 
   return (
-    <FormItemContext value={formItemContextValues}>
+    <FormItemContextProvider id={id}>
       <div
-        id={`${id}-${field.name}`}
-        className={cn('space-y-2', className)}
+        data-slot='form-item'
+        className={cn('grid gap-2', className)}
         {...props}
       />
-    </FormItemContext>
+    </FormItemContextProvider>
   )
 }
 
-export const FormLabel: React.FC<LabelProps> = ({ className, ...props }) => {
-  const { hasError, formItemId } = useFormItem()
+export const FormLabel = ({ className, ...props }: LabelProps) => {
+  const { formItemId, errors } = useFieldContext()
+
   return (
     <Label
+      data-slot='form-label'
+      data-error={!!errors.length}
+      className={cn('data-[error=true]:text-destructive', className)}
       htmlFor={formItemId}
-      className={cn(hasError && 'text-destructive', className)}
       {...props}
     />
   )
 }
 
-type FormControlProps = React.ComponentProps<typeof Slot>
-export const FormControl: React.FC<FormControlProps> = ({ ...props }) => {
-  const { hasError, formItemId } = useFormItem()
+export const FormControl = ({ ...props }: SlotProps) => {
+  const { errors, formItemId, formDescriptionId, formMessageId } = useFieldContext()
 
   return (
     <Slot
+      data-slot='form-control'
       id={formItemId}
-      aria-describedby={hasError ? `${formItemId}-error` : formItemId}
-      aria-invalid={hasError}
+      aria-describedby={!errors.length ? formDescriptionId : `${formDescriptionId} ${formMessageId}`}
+      aria-invalid={!!errors.length}
       {...props}
     />
   )
 }
 
-type FormMessageProps = React.ComponentProps<'p'>
-export const FormMessage: React.FC<FormMessageProps> = ({ className, ...props }) => {
-  const { hasError, errors, formMessageId } = useFormItem()
-
-  return hasError ? (
-    <p
-      id={formMessageId}
-      className={cn('text-[0.8rem] font-medium text-destructive', className)}
-      {...props}
-    >
-      {errors.map(error => error.message).join(', ')}
-    </p>
-  ) : null
-}
-
-type FormDescriptionProps = React.ComponentProps<'p'>
-export const FormDescription: React.FC<FormDescriptionProps> = ({ className, ...props }) => {
-  const { formDescriptionId } = useFormItem()
+export const FormMessage = ({ className, ...props }: ComponentProps<'p'>) => {
+  const { errors, formMessageId } = useFieldContext()
+  const body = errors.length ? String(errors.at(0)?.message ?? '') : props.children
+  if (body == null) return null
 
   return (
     <p
+      data-slot='form-message'
+      id={formMessageId}
+      className={cn('text-destructive text-sm', className)}
+      {...props}
+    >
+      {body}
+    </p>
+  )
+}
+
+export const FormDescription = ({ className, ...props }: ComponentProps<'p'>) => {
+  const { formDescriptionId } = useFieldContext()
+
+  return (
+    <p
+      data-slot='form-description'
       id={formDescriptionId}
-      className={cn('text-[0.8rem] text-muted-foreground', className)}
+      className={cn('text-muted-foreground text-sm', className)}
       {...props}
     />
   )
 }
 
-type FormFieldWithIconProps = React.ComponentProps<'div'> & {
+interface FormFieldWithIconProps extends React.ComponentProps<'div'> {
   Icon: LucideIcon
 }
 
-export const FormFieldWithIcon: React.FC<FormFieldWithIconProps> = ({ className, Icon, children, ...props }) => {
-  const { hasError, id, name } = useFormItem()
+export const FormFieldWithIcon = ({ className, Icon, children, ...props }: FormFieldWithIconProps) => {
+  const { errors, id, name } = useFieldContext()
 
   return (
     <div
@@ -129,7 +135,7 @@ export const FormFieldWithIcon: React.FC<FormFieldWithIconProps> = ({ className,
           buttonVariants({ variant: 'ghost', size: 'sm' }),
           'hover:bg-transparent',
           'absolute top-0 left-0 px-3 py-2 h-full inline-flex items-center justify-center',
-          hasError && 'text-destructive'
+          !!errors.length && 'text-destructive'
         )}
       >
         <Icon
@@ -148,7 +154,7 @@ export const FormInput = (props: Omit<InputProps, 'value' | 'onChange'>) => {
   return (
     <Input
       {...props}
-      value={field.state.value}
+      value={field.value}
       onChange={e => {
         field.handleChange(e.target.value)
       }}
@@ -162,7 +168,7 @@ export const FormPasswordInput = (props: Omit<PasswordInputProps, 'value' | 'onC
   return (
     <PasswordInput
       {...props}
-      value={field.state.value}
+      value={field.value}
       onChange={e => {
         field.handleChange(e.target.value)
       }}
@@ -170,13 +176,13 @@ export const FormPasswordInput = (props: Omit<PasswordInputProps, 'value' | 'onC
   )
 }
 
-export const FormSwitch = ({ onCheckedChange, ...rest }: Omit<SwitchProps, 'checked'>) => {
+export const FormSwitch = ({ onCheckedChange, ...props }: Omit<SwitchProps, 'checked'>) => {
   const field = useFieldContext<boolean>()
 
   return (
     <Switch
-      {...rest}
-      checked={field.state.value}
+      {...props}
+      checked={field.value}
       onCheckedChange={checked => {
         field.handleChange(checked)
         onCheckedChange?.(checked)
